@@ -25,17 +25,9 @@ program
     "'cli' to hide the login page and perform the login through the CLI (default behavior), 'gui' to perform the login through the Azure GUI (more reliable but only works on GUI operating system), 'debug' to show the login page but perform the login through the CLI (useful to debug issues with the CLI login)"
   )
   .option(
-    "--no-sandbox",
-    "Disable the Puppeteer sandbox (usually necessary on Linux)"
-  )
-  .option(
     "--no-prompt",
     "Do not prompt for input and accept the default choice",
     false
-  )
-  .option(
-    "--enable-chrome-network-service",
-    "Enable Chromium's Network Service (needed when login provider redirects with 3XX)"
   )
   .option(
     "--no-verify-ssl",
@@ -46,12 +38,8 @@ program
     "Enable Chromium's pass-through authentication with Azure Active Directory Seamless Single Sign-On"
   )
   .option(
-    "--no-disable-extensions",
-    "Tell Puppeteer not to pass the --disable-extensions flag to Chromium"
-  )
-  .option(
     "--disable-gpu",
-    "Tell Puppeteer to pass the --disable-gpu flag to Chromium"
+    "Tell Playwright to pass the --disable-gpu flag to Chromium"
   )
   .parse(process.argv);
 
@@ -62,13 +50,10 @@ const profileName =
   process.env.AWS_PROFILE ||
   "default";
 const mode = (options.mode as string | undefined) || "cli";
-const disableSandbox = !options.sandbox;
 const noPrompt = !options.prompt;
-const enableChromeNetworkService = !!options.enableChromeNetworkService;
 const awsNoVerifySsl = !options.verifySsl;
 const enableChromeSeamlessSso = !!options.enableChromeSeamlessSso;
 const forceRefresh = !!options.forceRefresh;
-const noDisableExtensions = !options.disableExtensions;
 const disableGpu = !!options.disableGpu;
 
 Promise.resolve()
@@ -76,13 +61,10 @@ Promise.resolve()
     if (options.allProfiles) {
       return login.loginAll(
         mode,
-        disableSandbox,
         noPrompt,
-        enableChromeNetworkService,
         awsNoVerifySsl,
         enableChromeSeamlessSso,
         forceRefresh,
-        noDisableExtensions,
         disableGpu
       );
     }
@@ -91,12 +73,9 @@ Promise.resolve()
     return login.loginAsync(
       profileName,
       mode,
-      disableSandbox,
       noPrompt,
-      enableChromeNetworkService,
       awsNoVerifySsl,
       enableChromeSeamlessSso,
-      noDisableExtensions,
       disableGpu
     );
   })
