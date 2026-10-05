@@ -20,6 +20,14 @@ If your organization uses [Azure Active Directory](https://azure.microsoft.com) 
 
     npm install -g aws-azure-login
 
+### Install directly from GitHub (e.g. this fork)
+
+    npm install -g github:t-lesniewski-sr/aws-azure-login#main
+
+To install a specific branch:
+
+    npm install -g github:t-lesniewski-sr/aws-azure-login#t-lesniewski-sr/impl-playwright-migration
+
 ### Docker
 
 A Docker image has been built with aws-azure-login preinstalled. You simply need to run the command with a volume mounted to your AWS configuration directory.
