@@ -3,48 +3,20 @@
 
 # aws-azure-login
 
-If your organization uses [Azure Active Directory](https://azure.microsoft.com) to provide SSO login to the AWS console, then there is no easy way to log in on the command line or to use the [AWS CLI](https://aws.amazon.com/cli/). This tool fixes that. It lets you use the normal Azure AD login (including MFA) from a command line to create a federated AWS session and places the temporary credentials in the proper place for the AWS CLI and SDKs.
+If your organization uses [Azure Active Directory](https://azure.microsoft.com) to provide SSO login to the AWS console, then there is no easy way to log in on the command line or to use the [AWS CLI](https://aws.amazon.com/cli/). This tool fixes that. It lets you use the normal Azure AD login (including MFA and hardware security keys) from a command line to create a federated AWS session and places the temporary credentials in the proper place for the AWS CLI and SDKs.
+
+## Requirements
+
+- [Node.js](https://nodejs.org/) v20 or higher
+- Google Chrome or Chromium installed on your system
 
 ## Installation
 
-Installation can be done in any of the following platform - Windows, Linux, Docker, Snap
-
-### Windows
-
-Install [Node.js](https://nodejs.org/) v12 or higher. Then install aws-azure-login with npm:
+### macOS / Linux
 
     npm install -g aws-azure-login
 
-You may need to install puppeteer dependency, if you're getting missing chrome or chromium message
-
-    node <node_modules_dir>/aws-azure-login/node_modules/puppeteer/install.js
-
-### Linux
-
-In Linux you can either install for all users or just the current user. In either case, you must first install [Node.js](https://nodejs.org/) v12 or higher and any [puppeteer dependencies](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md#chrome-headless-doesnt-launch). Then follow the appropriate instructions.
-
-#### Option A: Install for All Users
-
-Install aws-azure-login globally with npm:
-
-    sudo npm install -g aws-azure-login --unsafe-perm
-
-Puppeteer doesn't install globally with execution permissions for all users so you'll need to modify them:
-
-    sudo chmod -R go+rx $(npm root -g)
-
-#### Option B: Install Only for Current User
-
-First configure npm to install global packages in [your home directory](https://docs.npmjs.com/getting-started/fixing-npm-permissions):
-
-    mkdir ~/.npm-global
-    npm config set prefix '~/.npm-global'
-    export PATH=~/.npm-global/bin:$PATH
-    source ~/.profile
-    echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
-    source ~/.profile
-
-Then install aws-azure-login:
+### Windows
 
     npm install -g aws-azure-login
 
@@ -62,10 +34,6 @@ You can also put the docker-launch.sh script into your bin directory for the aws
     sudo chmod o+x /usr/local/bin/aws-azure-login
 
 Now just run `aws-azure-login`.
-
-### Snap
-
-https://snapcraft.io/aws-azure-login
 
 ## Usage
 
@@ -111,6 +79,17 @@ or
 
 to refresh your aws credentials.
 
+#### Browser extensions (Bitwarden, etc.)
+
+When using `--mode gui` with "stay logged in" enabled, the browser opens a persistent profile stored at `~/.aws/chromium`. You can install extensions (e.g. Bitwarden password manager) into this profile:
+
+1. Run `aws-azure-login --mode gui` once to create the profile directory.
+2. Open `chrome://extensions` in the browser window that appears.
+3. Enable **Developer mode** and click **Load unpacked**.
+4. Point it at your extension's directory.
+
+The extension will persist across future runs.
+
 #### Environment Variables
 
 You can optionally store your responses as environment variables:
@@ -146,19 +125,17 @@ Alternatively, you can set the `AWS_PROFILE` environmental variable to the name 
 
 Once you log in you can use the AWS CLI or SDKs as usual!
 
-If you are logging in on an operating system with a GUI, you can log in using the actual Azure web form instead of the CLI:
+#### GUI mode (recommended for MFA and hardware security keys)
+
+If you use MFA via a hardware security key (YubiKey, FIDO2) or want to use the actual Azure web form:
 
     aws-azure-login --mode gui
 
-Logging in with GUI mode is likely to be much more reliable.
+GUI mode opens a real browser window. Hardware security keys (WebAuthn/FIDO2) only work in GUI mode.
 
-_Note:_ on virtual machines, or when rendering of the puppeteer UI fails, you might need to disable the GPU Hardware Acceleration:
+_Note:_ on some systems you may need to disable GPU hardware acceleration if the browser window renders incorrectly:
 
     aws-azure-login --mode gui --disable-gpu
-
-_Note:_ on Linux you will likely need to disable the Puppeteer sandbox or Chrome will fail to launch:
-
-    aws-azure-login --no-sandbox
 
 ### Behind corporate proxy
 
@@ -195,11 +172,11 @@ Your Azure AD system admin should be able to provide you with your Tenant ID and
 
 ## How It Works
 
-The Azure login page uses JavaScript, which requires a real web browser. To automate this from a command line, aws-azure-login uses [Puppeteer](https://github.com/GoogleChrome/puppeteer), which automates a real Chromium browser. It loads the Azure login page behind the scenes, populates your username and password (and MFA token), parses the SAML assertion, uses the [AWS STS AssumeRoleWithSAML API](http://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithSAML.html) to get temporary credentials, and saves these in the CLI credentials file.
+The Azure login page uses JavaScript, which requires a real web browser. To automate this from a command line, aws-azure-login uses [Playwright](https://playwright.dev/), which automates a real browser. It loads the Azure login page behind the scenes, populates your username and password (and MFA token), parses the SAML assertion, uses the [AWS STS AssumeRoleWithSAML API](http://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithSAML.html) to get temporary credentials, and saves these in the CLI credentials file.
 
 ## Troubleshooting
 
-The nature of browser automation with Puppeteer means the solution is bit brittle. A minor change on the Microsoft side could break the tool. If something isn't working, you can fall back to GUI mode (above). To debug an issue, you can run in debug mode (--mode debug) to see the GUI while aws-azure-login tries to populate it. You can also have the tool print out more detail on what it is doing to try to do in order to diagnose. aws-azure-login uses the [Node debug module](https://www.npmjs.com/package/debug) to print out debug info. Just set the DEBUG environmental variable to 'aws-azure-login'. On Linux/OS X:
+If something isn't working, you can fall back to GUI mode (above). To debug an issue, you can run in debug mode (`--mode debug`) to see the browser while aws-azure-login tries to populate it. You can also have the tool print out more detail on what it is doing. aws-azure-login uses the [Node debug module](https://www.npmjs.com/package/debug) to print out debug info. Just set the DEBUG environmental variable to 'aws-azure-login'. On Linux/macOS:
 
     DEBUG=aws-azure-login aws-azure-login
 
@@ -207,6 +184,22 @@ On Windows:
 
     set DEBUG=aws-azure-login
     aws-azure-login
+
+### Using a specific browser executable
+
+By default aws-azure-login uses the Chromium bundled with Playwright. To use a different browser (e.g. system Chrome):
+
+    PLAYWRIGHT_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" aws-azure-login --mode gui --profile ops
+
+For backwards compatibility the old Puppeteer variable also works:
+
+    PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" aws-azure-login --mode gui --profile ops
+
+### Stale browser profile
+
+If you see an error like "Opening in existing browser session", a previous run may have left lock files in the profile directory. Remove them:
+
+    rm -f ~/.aws/chromium/SingletonLock ~/.aws/chromium/SingletonSocket ~/.aws/chromium/SingletonCookie
 
 ## Support for Other Authentication Providers
 
