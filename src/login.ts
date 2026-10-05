@@ -692,6 +692,11 @@ export const login = {
       //         "$HOME/.aws/chromium/Default/Extensions/nngceckbapebfimnlniiiahkandclblb"
       const ignoreDefaultArgs = ["--use-mock-keychain", "--disable-extensions"];
 
+      const executablePath =
+        process.env.PLAYWRIGHT_EXECUTABLE_PATH ||
+        process.env.PUPPETEER_EXECUTABLE_PATH ||
+        undefined;
+
       await mkdir(paths.chromium, { recursive: true });
 
       try {
@@ -699,6 +704,7 @@ export const login = {
           headless,
           args: launchArgs,
           ignoreDefaultArgs,
+          executablePath,
           viewport: viewportSize,
           extraHTTPHeaders: { "Accept-Language": "en" },
         });
